@@ -14,10 +14,12 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
-	"os/user"
-	"path"
+	// "os/user"
+	// "path"
+	"os"
 	"strings"
-	"syscall"
+	// "syscall"
+	// "os"
 	"time"
 )
 
@@ -70,13 +72,16 @@ func authCodeOrDie(sec string, ts int64) string {
 }
 
 func main() {
-	user, e := user.Current()
-	if e != nil {
-		log.Fatal(e)
-	}
-	cfgPath := path.Join(user.HomeDir, ".config/gauth.csv")
+	// user, e := user.Current()
+	// if e != nil {
+	// 	log.Fatal(e)
+	// }
+	// cfgPath := path.Join(user.HomeDir, ".config/gauth.csv")
+	// cfgPath := path.Join(os.Getenv("HOME"), ".ssh/gauth.csv")
+	// cfgPath := path.Join("gauth.csv")
+	// cfgContent, e := ioutil.ReadFile(cfgPath)
+	cfgContent, e := ioutil.ReadAll(os.Stdin)
 
-	cfgContent, e := ioutil.ReadFile(cfgPath)
 	if e != nil {
 		log.Fatal(e)
 	}
@@ -84,7 +89,8 @@ func main() {
 	// Support for 'openssl enc -aes-128-cbc -md sha256 -pass pass:'
 	if bytes.Compare(cfgContent[:8], []byte{0x53, 0x61, 0x6c, 0x74, 0x65, 0x64, 0x5f, 0x5f}) == 0 {
 		fmt.Printf("Encryption password: ")
-		passwd, e := terminal.ReadPassword(syscall.Stdin)
+		// passwd, e := terminal.ReadPassword(syscall.Stdin)
+		passwd, e := terminal.ReadPassword(0)
 		fmt.Printf("\n")
 		if e != nil {
 			log.Fatal(e)
