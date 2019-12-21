@@ -23,10 +23,10 @@ $ openssl enc -aes-128-cbc -md sha256 -d -in gauth.ssl -out gauth.mfa
     password=xxx
 
 # Get the 2fa code
-$ gauth [$HOME/.ssh/gauth.ssl]
-    password=xxx
-    2fa        prev   curr   next
-    test       129079 237029 032420  
+$ go run gauth.go [tes] [$HOME/.ssh/gauth.ssl]
+|   pass:xxx
+|   2FA    Name
+|   129079 test
 */
 
 package main
@@ -71,6 +71,7 @@ func normalizeSecret(sec string) string {
 func AuthCode(sec string, ts int64) (string, error) {
   key, err := base32.StdEncoding.DecodeString(sec)
   if err != nil {
+    fmt.Fprintf(os.Stderr, "base32 Decode error %v",err)
     return "", err
   }
   enc := hmac.New(sha1.New, key)
@@ -84,6 +85,7 @@ func AuthCode(sec string, ts int64) (string, error) {
   msg[6] = (byte)(ts >> (1 * 8) & 0xff)
   msg[7] = (byte)(ts >> (0 * 8) & 0xff)
   if _, err := enc.Write(msg); err != nil {
+    fmt.Fprintf(os.Stderr, "Write error %v",err)
     return "", err
   }
   hash := enc.Sum(nil)
@@ -97,18 +99,24 @@ func AuthCode(sec string, ts int64) (string, error) {
 func authCodeOrDie(sec string, ts int64) string {
   str, e := AuthCode(sec, ts)
   if e != nil {
+    fmt.Fprintf(os.Stderr, "Invalid AuthCode %v",e)
     log.Fatal(e)
   }
   return str
 }
 
 func main() {
-  cfgPath := path.Join(os.Getenv("HOME"), ".ssh/gauth.ssl")
+  filter := ""
   if len(os.Args) > 1 {
-    cfgPath = os.Args[1]
+    filter = os.Args[1]
+  }
+  cfgPath := path.Join(os.Getenv("HOME"), ".ssh/gauth.ssl")
+  if len(os.Args) > 2 {
+    cfgPath = os.Args[2]
   }
   cfgContent, e := ioutil.ReadFile(cfgPath)
   if e != nil {
+    fmt.Fprintf(os.Stderr, "error Readfile %s %v",cfgPath,e)
     log.Fatal(e)
   }
 
@@ -121,10 +129,11 @@ func main() {
     // passwd, e := terminal.ReadPassword(0)
     // passwd, e := terminal.ReadPassword(int(syscall.Stdin))
     passwd, e := gopass.GetPasswd()
-    fmt.Printf("\n")
     if e != nil {
+      fmt.Fprintf(os.Stderr, "GetPasswd error %v",e)
       log.Fatal(e)
     }
+    // fmt.Printf("\n")
     salt := cfgContent[8:16]
     rest := cfgContent[16:]
     salting := sha256.New()
@@ -135,14 +144,15 @@ func main() {
     iv := sum[16:]
     block, e := aes.NewCipher(key)
     if e != nil {
+      fmt.Fprintf(os.Stderr, "aes.NewCipher error %v",e)
       log.Fatal(e)
     }
 
     mode := cipher.NewCBCDecrypter(block, iv)
     mode.CryptBlocks(rest, rest)
     // Remove padding
-    i := len(rest) - 1
-    for rest[i] < 16 {
+    i := len(rest)
+    for i>0 && rest[i-1] < 16 {
       i--
     }
     cfgContent = rest[:i]
@@ -154,22 +164,30 @@ func main() {
 
   cfg, e := cfgReader.ReadAll()
   if e != nil {
+    fmt.Fprintf(os.Stderr, "Read error %v",e)
     log.Fatal(e)
   }
 
   // currentTS, progress := TimeStamp()
   currentTS, _ := TimeStamp()
-  prevTS := currentTS - 1
-  nextTS := currentTS + 1
+  // prevTS := currentTS - 1
+  // nextTS := currentTS + 1
 
-  fmt.Printf("-- %10s %10s %10s %-20s\n", "prev", "curr", "next", "name");
-  for ii, record := range cfg {
+  // fmt.Printf("-- %10s %10s %10s %-20s\n", "prev", "curr", "next", "Name");
+  fmt.Printf("| %6s |%-20s\n", "2FA", "Name");
+  for _, record := range cfg {
     name := record[0]
+    // fmt.Printf("name=%s\n", name);
+    if (filter != "" && !strings.Contains(name, filter) ) {
+      continue
+    }
     secret := normalizeSecret(record[1])
-    prevToken := authCodeOrDie(secret, prevTS)
+    // fmt.Printf("secret=%s\n", secret);
+    // prevToken := authCodeOrDie(secret, prevTS)
+    // nextToken := authCodeOrDie(secret, nextTS)
+    // fmt.Printf("%-2d %10s %10s %10s %-20s\n", 1+ii, prevToken, currentToken, nextToken, name)
     currentToken := authCodeOrDie(secret, currentTS)
-    nextToken := authCodeOrDie(secret, nextTS)
-    fmt.Printf("%-2d %10s %10s %10s %-20s\n", 1+ii, prevToken, currentToken, nextToken, name)
+    fmt.Printf("| %6s |%-20s\n", currentToken, name)
   }
   // fmt.Printf("[%-29s]\n", strings.Repeat("=", progress))
 }
