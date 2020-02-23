@@ -27,6 +27,15 @@ $ go run gauth.go [tes] [$HOME/.ssh/gauth.ssl]
 |   pass:xxx
 |   2FA    Name
 |   129079 test
+
+# Print qrcode.txt on console as scanable image
+  $ pip install qrcode
+  $ qr "otpauth://totp/Example:mosh@mosh.com?secret=XYZ&issuer=SOMEONE"
+    qrcode printed on Console.
+
+# Convert text to png image, from https://github.com/miyako/console-qrencode
+  $ waqrencode -t png -i mfa.txt -o mfa.png
+
 */
 
 package main
