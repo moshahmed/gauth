@@ -36,6 +36,8 @@ $ go run gauth.go [tes] [$HOME/.ssh/gauth.ssl]
 # Convert text to png image, from https://github.com/miyako/console-qrencode
   $ waqrencode -t png -i mfa.txt -o mfa.png
 
+# Convert qrcode.jpg image to string
+  $ zbarimg qrcode.jpg
 */
 
 package main
