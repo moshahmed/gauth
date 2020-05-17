@@ -1,45 +1,41 @@
-[![Build Status](https://travis-ci.org/pcarrier/gauth.png?branch=master)](https://travis-ci.org/pcarrier/gauth)
-
 gauth: replace Google Authenticator
 ===================================
 
-Installation
-------------
+/*
+What: Google Auth for win7
+Edits: moshahmed@gmail 2019
+Repo: https://github.com/moshahmed/gauth
+Forked: https://github.com/pcarrier/gauth 
+Usage:
+> go get github.com/pcarrier
+> go get github.com/howeyc/gopass
+> go build gauth.go
+ 
+$ cd ~/.ssh
+$ cat gauth.mfa
+    test,ABC
+# Encrypt gauth.mfa to gauth.ssl
+$ openssl enc -aes-128-cbc -md sha256 -in gauth.mfa -out gauth.ssl
+    password=xxx
+# Decrypt gauth.ssl and edit gauth.mfa
+$ openssl enc -aes-128-cbc -md sha256 -d -in gauth.ssl -out gauth.mfa
+    password=xxx
+# Get the 2fa code
+$ go run gauth.go [tes] [$HOME/.ssh/gauth.ssl]
+|   pass:xxx
+|   2FA    Name
+|   129079 test
+# Print qrcode.txt on console as scanable image
+  $ pip install qrcode
+  $ qr "otpauth://totp/Example:mosh@mosh.com?secret=XYZ&issuer=SOMEONE"
+    qrcode printed on Console.
+# Convert text to png image, from https://github.com/miyako/console-qrencode
+  $ waqrencode -t png -i mfa.txt -o mfa.png
+# Convert qrcode.jpg image to string
+  $ zbarimg qrcode.jpg
+*/
 
-With a Go environment already set up, it should be as easy as `go get github.com/pcarrier/gauth`.
-
-*Eg,* with `GOPATH=$HOME/go`, it will create a binary `$HOME/go/bin/gauth`.
-
-Usage
------
-
-- In web interfaces, pretend you can't read QR codes, get a secret like `hret 3ij7 kaj4 2jzg` instead.
-- Store one secret per line in `~/.config/gauth.csv`, in the format `name:secret`. For example:
-
-        AWS:   ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567
-        Airbnb:abcd efgh ijkl mnop
-        Google:a2b3c4d5e6f7g8h9
-        Github:234567qrstuvwxyz
-
-- Restrict access to your user:
-
-        $ chmod 600 ~/.config/gauth.csv
-
-- Run `gauth`. The progress bar indicates how far the next change is.
-
-        $ gauth
-                   prev   curr   next
-        AWS        315306 135387 483601
-        Airbnb     563728 339206 904549
-        Google     453564 477615 356846
-        Github     911264 548790 784099
-        [=======                      ]
-
-- `gauth` is convenient to use in `watch`.
-
-        $ watch -n1 gauth
-
-- Remember to keep your system clock synchronized and to **lock your computer when brewing your tea!**
+- Remember to keep your system clock synchronized
 
 Encryption
 ----------
